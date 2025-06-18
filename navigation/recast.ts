@@ -5,7 +5,7 @@ type Polygon = Point[];
 
 /**
  * 使用 earcut 划分可行走区域为凸多边形
- * @param boundingBox 矩形边界 [左下, 右下, 右上, 左上]（逆时针）
+ * @param boundingBox 矩形边界 [左上，右上，右下，左下]（顺时针）
  * @param obstacles 凸多边形障碍物数组（每个障碍物顺时针）
  * @returns 可行走区域的凸多边形列表
  */
