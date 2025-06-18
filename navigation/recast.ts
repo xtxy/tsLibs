@@ -25,7 +25,6 @@ export function decomposeWalkableArea(
     return mergeTrianglesToConvexPolygons(triangles);
 }
 
-/** 输入验证（确保凸性和非重叠） */
 function validateInput(boundingBox: Polygon, obstacles: Polygon[]) {
     if (boundingBox.length !== 4) throw new Error("矩形区域必须为4个点");
     obstacles.forEach((obstacle, i) => {
@@ -113,19 +112,13 @@ function mergeTrianglesToConvexPolygons(triangles: Polygon[]): Polygon[] {
     const adjacencyMap = new Map<number, number[]>();
     for (let i = 0; i < triangles.length; i++) {
         adjacencyMap.set(i, []);
-        for (let j = i + 1; j < triangles.length; j++) {
-            if (!shareEdge(triangles[i], triangles[j])) {
+
+        for (let j = 0; j < triangles.length; j++) {
+            if (i == j || !shareEdge(triangles[i], triangles[j])) {
                 continue;
             }
 
             adjacencyMap.get(i)!.push(j);
-
-            const itemJ = adjacencyMap.get(j);
-            if (itemJ) {
-                itemJ.push(i);
-            } else {
-                adjacencyMap.set(j, [i]);
-            }
         }
     }
 
@@ -184,35 +177,24 @@ function mergePolygons(poly1: Polygon, poly2: Polygon): Polygon | null {
         return null;
     }
 
-    const [edgeStart, edgeEnd] = sharedEdge;
-
-    // 构建新多边形（移除共享边）
+    const edgeStart = sharedEdge[0];
     const newPoly: Polygon = [];
 
-    // 添加 poly1 的顶点（跳过共享边）
-    let current = poly1.findIndex(p => pointsEqual(p, edgeStart));
+    let index = poly2.findIndex(p => pointsEqual(p, edgeStart));
+    index = (index + 1) % poly2.length;
 
-    while (true) {
-        const next = (current + 1) % poly1.length;
-        if (pointsEqual(poly1[current], edgeStart) && pointsEqual(poly1[next], edgeEnd)) {
-            break;
+    for (const p of poly1) {
+        newPoly.push(p);
+
+        if (!pointsEqual(p, edgeStart)) {
+            continue;
         }
 
-        newPoly.push(poly1[current]);
-        current = next;
-    }
-
-    // 添加 poly2 的顶点（跳过共享边）
-    current = poly2.findIndex(p => pointsEqual(p, edgeEnd));
-
-    while (true) {
-        const next = (current + 1) % poly2.length;
-        newPoly.push(poly2[current]);
-        if (pointsEqual(poly2[current], edgeEnd) && pointsEqual(poly2[next], edgeStart)) {
-            break;
+        for (let i = 1; i < poly2.length - 1; i++) {
+            const p2 = poly2[index];
+            newPoly.push(p2);
+            index = (index + 1) % poly2.length;
         }
-
-        current = next;
     }
 
     return newPoly;
